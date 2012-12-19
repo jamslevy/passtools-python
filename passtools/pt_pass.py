@@ -1,5 +1,5 @@
 ##########################################
-# pt_pass.py
+# pass.py
 #
 # Models PassTools Pass
 #
@@ -16,14 +16,14 @@ try:
 except ImportError:
     import json
 
-from pt_client import PassToolsClient
-from pt_exceptions import *
+
+import exceptions
 
 class Pass(object):
 
-    def __init__(self, template_id = None, template_fields_model_dict = None):
+    def __init__(self, template_id = None, template_fields_model = None):
         """
-        Init, optionally populate, new pt_pass.Pass instance
+        Init, optionally populate, new pass.Pass instance
         If template_id and template_fields_model are supplied, will create new complete instance,
         else just create empty instance.
         
@@ -31,43 +31,47 @@ class Pass(object):
         
         @type template_id: int
         @param template_id: ID of the template used to create new pass [Optional]
-        @type template_fields_model_dict: dict
-        @param template_fields_model_dict: template_fields_model dict of the template used to create new pass [Optional]
+        @type template_fields_model: dict
+        @param template_fields_model: template_fields_model dict of the template used to create new pass [Optional]
         @return: None
         """
         super(Pass, self).__init__()
         self.created_at = None
         self.pass_fields = None
-        self.id = None
+        self.pass_id = None
         self.template_id = None
         self.url = None
+        from client import PassToolsClient
         self.api_client = PassToolsClient()
-        if template_id and template_fields_model_dict:
-            new_pass = self.create(template_id, template_fields_model_dict)
+        if template_id and template_fields_model:
+            new_pass = self.create(template_id, template_fields_model)
             if new_pass:
                 self.created_at = new_pass.created_at
                 self.pass_fields = json.loads(new_pass.pass_fields, encoding="ISO-8859-1")
-                self.id = new_pass.id
+                self.pass_id = new_pass.pass_id
                 self.template_id = new_pass.template_id
                 self.url = new_pass.url
 
+
     def __str__(self):
         pretty_pass_fields = json.dumps(self.pass_fields, sort_keys = True, indent = 2, encoding="ISO-8859-1")
-        return "id: %s\ntemplate_id: %s\nurl: %s\npass_fields: %s" % (self.id,
+        return "id: %s\ntemplate_id: %s\nurl: %s\npass_fields: %s" % (self.pass_id,
                                                                         self.template_id,
                                                                         self.url,
                                                                         pretty_pass_fields)
 
-    def __load_from_pass_dict(self, pass_dict):
+    def __load_from_pass(self, pass_obj):
         # Any unset fields will be assigned to corresponding value present in pass_json
         field_name_map = {"created_at":"createdAt", "pass_fields":"passFields",
-                                                                "id":"id","template_id":"templateId", "url":"url"}
-        for member_name in field_name_map:
-            db_name = field_name_map[member_name]
-            if member_name in vars(self) and not vars(self)[member_name] and db_name in pass_dict:
-                vars(self)[member_name] = pass_dict[db_name]
+                                                                "pass_id":"id","template_id":"templateId", "url":"url"}
+        for obj_field, db_field in field_name_map.items():
+            if not getattr(self,obj_field,None):
+                # if the object attribute is set to None, set it
+                setattr(self, obj_field, pass_obj[db_field])
 
-    def create(self, template_id = None, template_fields_model_dict = None):
+
+
+    def create(self, template_id = None, template_fields_model = None):
         """
         Create new Pass from specified template.
 
@@ -75,29 +79,29 @@ class Pass(object):
 
         @type template_id: int
         @param template_id: ID of the template used to create new pass
-        @type template_fields_model_dict: dict
-        @param template_fields_model_dict: template_fields_model dict of the template used to create new pass
-        @return: pt_pass.Pass instance
+        @type template_fields_model: dict
+        @param template_fields_model: template_fields_model dict of the template used to create new pass
+        @return: pass.Pass instance
         """
         if template_id is None:
-            raise InvalidParameterException("Pass.create() called without required parameter: template_id")
+            raise exceptions.InvalidParameterException("Pass.create() called without required parameter: template_id")
         try:
             test = float(template_id)
         except TypeError:
-            raise InvalidParameterException("Pass.create() called with non-numeric parameter: template_id ('%s')" % template_id)
-        if template_fields_model_dict is None:
-            raise InvalidParameterException("Pass.create() called without required parameter: template_fields_model_dict")
+            raise exceptions.InvalidParameterException("Pass.create() called with non-numeric parameter: template_id ('%s')" % template_id)
+        if template_fields_model is None:
+            raise exceptions.InvalidParameterException("Pass.create() called without required parameter: template_fields_model")
 
         request_url = "/pass/%s" % (str(template_id))
-        request_dict = {"json":json.dumps(template_fields_model_dict, encoding="ISO-8859-1")}
-        response_code, response_data_dict = self.api_client.pt_post_dict(request_url, request_dict)
+        request = {"json":json.dumps(template_fields_model, encoding="ISO-8859-1")}
+        response_code, response_data = self.api_client.post(request_url, request)
 
         new_pass = None
         if response_code == 200:
             new_pass = Pass()
-            new_pass.pass_fields = json.dumps(template_fields_model_dict, encoding="ISO-8859-1")
+            new_pass.pass_fields = json.dumps(template_fields_model, encoding="ISO-8859-1")
             new_pass.template_id = template_id
-            new_pass.__load_from_pass_dict(response_data_dict)
+            new_pass.__load_from_pass(json.loads(response_data))
 
         return new_pass
 
@@ -109,15 +113,15 @@ class Pass(object):
 
         @type update_fields: dict
         @param update_fields: Pass.pass_fields dict
-        @return: pt_pass.Pass instance
+        @return: pass.Pass instance
         """
         updated_pass = None
-        if update_fields is None or update_fields.id is None:
-            raise InvalidParameterException("Pass.update() called without required parameter: update_fields")
+        if update_fields is None or update_fields.pass_id is None:
+            raise exceptions.InvalidParameterException("Pass.update() called without required parameter: update_fields")
 
-        request_url = "/pass/%s" % (str(self.id))
-        request_dict = {"json":json.dumps(update_fields.pass_fields, encoding="ISO-8859-1")}
-        response_code, response_data = self.api_client.pt_put(request_url, request_dict)
+        request_url = "/pass/%s" % (str(self.pass_id))
+        request = {"json":json.dumps(update_fields.pass_fields, encoding="ISO-8859-1")}
+        response_code, response_data = self.api_client.put(request_url, request)
         if response_code == 200:
             updated_pass = self.get()
         return updated_pass
@@ -129,20 +133,20 @@ class Pass(object):
         API call used is v1/pass/<pass_id>/push (PUT)
 
         @type pass_id: int
-        @param pass_id: ID of desired pt_pass.Pass. [Optional: If not supplied, = self.id]
+        @param pass_id: ID of desired pass.Pass. [Optional: If not supplied, = self.pass_id]
         @return: Dict
         """
         ret_data = {}
-        if pass_id is None: pass_id = self.id
+        if pass_id is None: pass_id = self.pass_id
         if pass_id is None:
-            raise InvalidParameterException("Pass.push_update() called without required parameter: pass_id")
+            raise exceptions.InvalidParameterException("Pass.push_update() called without required parameter: pass_id")
         try:
             test = float(pass_id)
         except TypeError:
-            raise InvalidParameterException("Pass.push_update() called with non-numeric parameter: pass_id ('%s')" % pass_id)
+            raise exceptions.InvalidParameterException("Pass.push_update() called with non-numeric parameter: pass_id ('%s')" % pass_id)
 
         request_url = "/pass/%s/push" % (str(pass_id))
-        response_code, response_data = self.api_client.pt_put(request_url)
+        response_code, response_data = self.api_client.put(request_url)
         if response_code == 200:
             ret_data = response_data
 
@@ -155,24 +159,24 @@ class Pass(object):
         API call used is v1/pass/<pass_id> (GET)
 
         @type pass_id: int
-        @param pass_id: ID of desired pt_pass.Pass. [Optional: If not supplied, = self.id]
-        @return: pt_pass.Pass instance
+        @param pass_id: ID of desired pass.Pass. [Optional: If not supplied, = self.pass_id]
+        @return: pass.Pass instance
         """
-        if pass_id is None: pass_id = self.id
+        if pass_id is None: pass_id = self.pass_id
         if pass_id is None:
-            raise InvalidParameterException("Pass.get() called without required parameter: pass_id")
+            raise exceptions.InvalidParameterException("Pass.get() called without required parameter: pass_id")
         try:
             test = float(pass_id)
         except TypeError:
-            raise InvalidParameterException("Pass.get() called with non-numeric parameter: pass_id ('%s')" % pass_id)
+            raise exceptions.InvalidParameterException("Pass.get() called with non-numeric parameter: pass_id ('%s')" % pass_id)
 
         request_url = "/pass/%s" % (str(pass_id))
-        response_code, response_data_dict = self.api_client.pt_get_dict(request_url)
+        response_code, response_data = self.api_client.get(request_url)
 
         new_pass = None
         if response_code == 200:
             new_pass = Pass()
-            new_pass.__load_from_pass_dict(response_data_dict)
+            new_pass.__load_from_pass(response_data)
 
         return new_pass
 
@@ -187,15 +191,15 @@ class Pass(object):
         @param templateId: ID of the template used to create new pass
         @return: Integer
         """
-        request_dict = {}
+        request = {}
         if template_id:
-            request_dict["templateId"] = template_id
+            request["templateId"] = template_id
         request_url = "/pass"
-        response_code, response_data_dict = self.api_client.pt_get_dict(request_url, request_dict)
+        response_code, response_data = self.api_client.get(request_url, request)
 
         ret_val = 0
         if response_code == 200:
-            ret_val = int(response_data_dict["Count"])
+            ret_val = int(response_data["Count"])
 
         return ret_val
 
@@ -219,18 +223,17 @@ class Pass(object):
         @param order: Name of field on which to sort list [Optional; From (ID, Name, Created, Updated)]
         @type direction: string
         @param direction: Direction which to sort list [Optional; From (ASC, DESC); Default = DESC]
-        @return: List of pt_pass.Pass instances
+        @return: List of pass.Pass instances
         """
 
-        request_dict = kwargs
         request_url = "/pass"
-        response_code, response_data_dict = self.api_client.pt_get_dict(request_url, request_dict)
+        response_code, response_data = self.api_client.get(request_url, **kwargs)
 
         pass_list = []
         if response_code == 200:
-            for pass_dict in response_data_dict["Passes"]:
+            for p in response_data["Passes"]:
                 new_pass = Pass()
-                new_pass.__load_from_pass_dict(pass_dict)
+                new_pass.__load_from_pass(p)
                 pass_list.append(new_pass)
 
         return pass_list
@@ -244,19 +247,19 @@ class Pass(object):
         @type destination_path: str
         @param destination_path: path to receive pass file. Path must exist, and filename must end with ".pkpass"
         @type pass_id: int
-        @param pass_id: pass_id of pt_pass.Pass instance desired  [Optional: If not supplied, = self.id]
+        @param pass_id: pass_id of pass.Pass instance desired  [Optional: If not supplied, = self.pass_id]
         """
         if pass_id is None:
-            pass_id = self.id
-        try:
-            test = float(pass_id)
-        except TypeError:
-            raise InvalidParameterException("Pass.download() called with non-numeric parameter: pass_id ('%s')" % pass_id)
+            if self.pass_id:
+                pass_id = self.pass_id
+            else:
+                raise exceptions.InvalidParameterException("Pass.download() called without required parameter: pass_id")
+        self.__validate_pass_id(pass_id)
         if destination_path is None:
-            raise InvalidParameterException("Pass.download() called without required parameter: destination_path")
+            raise exceptions.InvalidParameterException("Pass.download() called without required parameter: destination_path")
 
         request_url = "/pass/%s/download" % (str(pass_id))
-        response_code, response_data = self.api_client.pt_get_json(request_url)
+        response_code, response_data = self.api_client.get_json(request_url)
 
         if response_code == 200:
             fh = open(destination_path, "wb")
@@ -270,22 +273,26 @@ class Pass(object):
         API call used is v1/pass/<pass_id> (DELETE)
 
         @type pass_id: int
-        @param pass_id: ID of the pass to delete [Optional: If not supplied, = self.id]
+        @param pass_id: ID of the pass to delete [Optional: If not supplied, = self.pass_id]
         @return: None
         """
         if pass_id is None:
-            pass_id = self.id
-        try:
-            test = float(pass_id)
-        except TypeError:
-            raise InvalidParameterException("Pass.delete() called with non-numeric parameter: pass_id ('%s')" % pass_id)
-
+            pass_id = self.pass_id
+        self.__validate_pass_id(pass_id)
         request_url = "/pass/%s" % (str(pass_id))
-        response_code, response_data = self.api_client.pt_delete(request_url, {})
+        response_code, response_data = self.api_client.delete(request_url, {})
         if response_code == 200:
             self.created_at = None
             self.pass_fields = None
-            self.id = None
+            self.pass_id = None
             self.template_id = None
             self.url = None
+            from client import PassToolsClient
             self.api_client = PassToolsClient()
+
+    def __validate_pass_id(self, pass_id):
+        try:
+            test = float(pass_id)
+        except (ValueError, TypeError):
+            raise exceptions.exceptions.InvalidParameterException("Non-numeric parameter: pass_id ('%s')" % pass_id)
+

@@ -9,28 +9,27 @@
 """
 Models PassTools Service, providing access to the PassTools API.
 
+For details refer to the documentation: https://passtools.com/docs#api-intro
+
 """
-from pt_client import PassToolsClient
-from pt_template import Template
+from client import PassToolsClient
+from template import Template
 from pt_pass import Pass
+
 
 class Service(object):
 
-    def __init__(self, my_api_key, my_base_url = "https://api.passtools.com/v1"):
+    def __init__(self, api_client=None):
         """
-        Init new pt_service.Service instance
+        Initiate new Passtools Service instance
 
-        @type my_api_key: str
-        @param my_api_key: User-specific API key required for accessing PassTools API
+        @type api_client: PassToolsClient instance
+        @param api_client: Optional custom client to include
         @return: None
         """
         super(Service, self).__init__()
         # Share the api_key and base_url with all importers of the module
-        global api_key
-        api_key = my_api_key.encode('utf8')
-        global base_url
-        base_url = my_base_url
-        self.api_client = PassToolsClient()
+        self.api_client = api_client or PassToolsClient()
 
     def is_service_up(self):
         """
@@ -41,7 +40,7 @@ class Service(object):
         @return: True if HTTP response was 200
         """
         request_url = "/system/status"
-        response_code, response_data = self.api_client.pt_get_json(request_url)
+        response_code, response_data = self.api_client.get_json(request_url)
         return response_code == 200
 
     def get_template(self, template_id = None):
@@ -52,7 +51,7 @@ class Service(object):
 
         @type template_id: int
         @param template_id: ID of the desired template
-        @return: pt_template.Template instance
+        @return: template.Template instance
         """
         new_template = Template(template_id)
         return new_template
@@ -98,12 +97,12 @@ class Service(object):
         @param order: Name of field on which to sort list [Optional; From (ID, Name, Created, Updated)]
         @type direction: string
         @param direction: Direction which to sort list [Optional; From (ASC, DESC)]
-        @return: List of pt_template.Template instances
+        @return: List of template.Template instances
         """
         temp_template = Template()
         return temp_template.list(**kwargs)
 
-    def create_pass(self, template_id = None, template_fields_model_dict = None):
+    def create_pass(self, template_id = None, template_fields_model = None):
         """
         Create new Pass from specified template.
 
@@ -111,11 +110,11 @@ class Service(object):
 
         @type template_id: int
         @param template_id: ID of the template used to create new pass
-        @type template_fields_model_dict: dict
-        @param template_fields_model_dict: template_fields_model dict of the template used to create new pass
+        @type template_fields_model: dict
+        @param template_fields_model: template_fields_model dict of the template used to create new pass
         @return: pt_pass.Pass instance
         """
-        new_pass = Pass(template_id, template_fields_model_dict)
+        new_pass = Pass(template_id, template_fields_model)
         return new_pass
 
     def update_pass(self, pass_id, update_fields = None):

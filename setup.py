@@ -1,3 +1,9 @@
+# -*- coding: ISO-8859-1 -*-
+##########################################
+
+# Copyright 2012, Tello, Inc.
+##########################################
+
 from distutils.core import setup
 import os
 
