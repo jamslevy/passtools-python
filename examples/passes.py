@@ -23,13 +23,12 @@ class TestPasses(test.PassToolsTestCase):
 		self.test_new()
 
 	def runTest(self):
-		self.test_list()
 		self.test_get()
 		self.test_update()
 		self.test_push_update()
 		self.test_delete()	
 
-	def test_get(self):
+	def _test_get(self):
 		# Next, we'll retrieve the full form of that pass
 		# You might retrieve a pass, for example, in preparation for updating it.
 
@@ -77,8 +76,7 @@ class TestPasses(test.PassToolsTestCase):
 		# Of course, we haven't changed any fields (since we don't know what's in your template!),
 		# so this pass will look like the template, but by changing the fields as described above,
 		# you'll be able to generate one form for many customers, or a unique pass for each customer, or anything in between.
-		self.pt_pass = pt_pass.Pass(template_id, template.fields_model)
-
+		self.pt_pass = pt_pass.Pass(template_id, template.fields_model, api_client=self.service.api_client)
 		print "New Pass from template ID %s" % template_id
 		print self.pt_pass
 		print self.pt_pass.pass_id
@@ -95,7 +93,7 @@ class TestPasses(test.PassToolsTestCase):
 		print "Downloading an id-specified Pass from the service..."
 		self.service.download_pass("/tmp/New_Pass_2.pkpass", self.pt_pass.pass_id)
 
-	def test_update(self):
+	def _test_update(self):
 		# Next, we'll update an existing pass, using--surprise!--the 'update' method. In this case, we use the fields
 		# from the existing pass, modify them, and call update. In typical usage, you might call 'get' above to retrieve a
 		# pass to use as input...we'll the pass we just created, so the script output will allow you to compare before/after update.
@@ -130,10 +128,10 @@ class TestPasses(test.PassToolsTestCase):
 		# If you send the updated pass to a user who has already installed the previous version,
 		# they'll see an "Update" button instead of an "Add" button in the iOS UI.
 
-	def test_push_update(self):
+	def _test_push_update(self):
 		return_data = self.pt_pass.push_update()		
 
-	def test_delete(self):
+	def _test_delete(self):
 		# Finally, let's delete the pass:
 		deleted_id = self.pt_pass.pass_id
 		print "Delete Pass %s" % deleted_id

@@ -23,12 +23,6 @@ import urllib2
 
 import exceptions
 
-API_KEY = '' # optionally include your API key here for convenience
-
-try:
-    from local_settings import API_KEY
-except ImportError: 
-    pass
 
 BASE_URL = 'https://api.passtools.com/v1'
 
@@ -39,7 +33,7 @@ BASE_URL = 'https://api.passtools.com/v1'
 #########################
 class PassToolsClient(object):
 
-    def __init__(self, api_key=API_KEY):
+    def __init__(self, api_key=None):
         self.api_key = api_key
 
     def get_json(self, path, **kwargs):
@@ -289,7 +283,7 @@ class PassToolsClient(object):
         except urllib2.URLError, e:
             fail_msg = "Error"
             # If exception includes no status code but a reason, it's a URLError
-            if hasattr(e, 'reason'):
+            if hasattr(e, 'reason') and hasattr(e.reason, 'errno'):
                 response_code = e.reason.errno
                 fail_msg = "Communication with host '%s' failed: %s (errno %s)" % (request.host, e.reason.strerror, response_code)
              # else if exception includes an HTTP status code, it's an HTTPError

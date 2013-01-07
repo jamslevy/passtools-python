@@ -16,12 +16,12 @@ try:
 except ImportError:
     import json
 
-
+import datetime
 import exceptions
 
 class Pass(object):
 
-    def __init__(self, template_id = None, template_fields_model = None):
+    def __init__(self, template_id = None, template_fields_model = None, api_client=None):
         """
         Init, optionally populate, new pass.Pass instance
         If template_id and template_fields_model are supplied, will create new complete instance,
@@ -36,21 +36,13 @@ class Pass(object):
         @return: None
         """
         super(Pass, self).__init__()
-        self.created_at = None
-        self.pass_fields = None
-        self.pass_id = None
-        self.template_id = None
-        self.url = None
         from client import PassToolsClient
-        self.api_client = PassToolsClient()
+        self.api_client = api_client or PassToolsClient()
         if template_id and template_fields_model:
             new_pass = self.create(template_id, template_fields_model)
             if new_pass:
-                self.created_at = new_pass.created_at
-                self.pass_fields = json.loads(new_pass.pass_fields, encoding="ISO-8859-1")
-                self.pass_id = new_pass.pass_id
-                self.template_id = new_pass.template_id
-                self.url = new_pass.url
+                for attr,val in new_pass.__dict__.iteritems():
+                    setattr(self, attr, val)
 
 
     def __str__(self):
@@ -60,16 +52,24 @@ class Pass(object):
                                                                         self.url,
                                                                         pretty_pass_fields)
 
-    def __load_from_pass(self, pass_obj):
+    def __load_from_dict(self, pass_dict):
         # Any unset fields will be assigned to corresponding value present in pass_json
-        field_name_map = {"created_at":"createdAt", "pass_fields":"passFields",
-                                                                "pass_id":"id","template_id":"templateId", "url":"url"}
-        for obj_field, db_field in field_name_map.items():
+        field_name_map = {
+            "created":"createdAt", 
+            "updated":"updatedAt", 
+            "pass_fields":"passFields",
+            "pass_id":"id",
+            "template_id": "templateId", 
+            "url":"url"
+        }
+        for obj_field, db_field in field_name_map.iteritems():
             if not getattr(self,obj_field,None):
-                # if the object attribute is set to None, set it
-                setattr(self, obj_field, pass_obj[db_field])
-
-
+                # if the object attribute is not set, set it
+                obj_val = pass_dict.get(db_field,None)
+                if obj_val:
+                    if obj_field in ["created","updated"]:
+                        obj_val = datetime.datetime.strptime(obj_val, '%Y-%m-%d %H:%M:%S.%f')   
+                    setattr(self, obj_field, obj_val)
 
     def create(self, template_id = None, template_fields_model = None):
         """
@@ -98,10 +98,8 @@ class Pass(object):
 
         new_pass = None
         if response_code == 200:
-            new_pass = Pass()
-            new_pass.pass_fields = json.dumps(template_fields_model, encoding="ISO-8859-1")
-            new_pass.template_id = template_id
-            new_pass.__load_from_pass(json.loads(response_data))
+            new_pass = Pass(api_client=self.api_client)
+            new_pass.__load_from_dict(json.loads(response_data))
 
         return new_pass
 
@@ -176,7 +174,7 @@ class Pass(object):
         new_pass = None
         if response_code == 200:
             new_pass = Pass()
-            new_pass.__load_from_pass(response_data)
+            new_pass.__load_from_dict(response_data)
 
         return new_pass
 
@@ -233,7 +231,7 @@ class Pass(object):
         if response_code == 200:
             for p in response_data["Passes"]:
                 new_pass = Pass()
-                new_pass.__load_from_pass(p)
+                new_pass.__load_from_dict(p)
                 pass_list.append(new_pass)
 
         return pass_list
@@ -281,14 +279,6 @@ class Pass(object):
         self.__validate_pass_id(pass_id)
         request_url = "/pass/%s" % (str(pass_id))
         response_code, response_data = self.api_client.delete(request_url, {})
-        if response_code == 200:
-            self.created_at = None
-            self.pass_fields = None
-            self.pass_id = None
-            self.template_id = None
-            self.url = None
-            from client import PassToolsClient
-            self.api_client = PassToolsClient()
 
     def __validate_pass_id(self, pass_id):
         try:

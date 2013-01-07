@@ -10,6 +10,7 @@
 Define and provide methods for manipulating PassTools Template objects.
 
 """
+
 try:
     import simplejson as json
 except ImportError:
@@ -17,10 +18,11 @@ except ImportError:
 
 import client
 import exceptions
+import datetime
 
 class Template(object):
 
-    def __init__(self, template_id = None):
+    def __init__(self, template_id = None, api_client=None):
         """
         Init, optionally populate, new pt_template.Template instance
         If template_id and template_fields_model are supplied, will retrieve complete instance,
@@ -33,17 +35,15 @@ class Template(object):
         @return: None
         """
         super(Template, self).__init__()
-        self.api_client = client.PassToolsClient()
+        self.api_client = api_client or client.PassToolsClient()
         self.template_id = template_id
         self.name = None
         self.description = None
         self.fields_model = {}
         if self.template_id:
             new_template = self.get(self.template_id)
-            if new_template:
-                self.name = new_template.name
-                self.description = new_template.description
-                self.fields_model = new_template.fields_model
+            for attr,val in new_template.__dict__.iteritems():
+                setattr(self, attr, val)
 
     def __str__(self):
         pretty_template_fields = json.dumps(self.fields_model, sort_keys = True, indent = 2, encoding="ISO-8859-1")
@@ -51,6 +51,39 @@ class Template(object):
                                                                     self.name,
                                                                     self.description,
                                                                     pretty_template_fields)
+
+    def __load_from_dict(self, template_dict):
+
+        field_name_map = {
+            "fields_model": "fieldsModel",
+            "header": "templateHeader"
+        }       
+        for obj_field, db_field in field_name_map.iteritems():
+            if not getattr(self,obj_field,None):
+                # if the object attribute is not set, set it
+                obj_val = template_dict.get(db_field,None)        
+                setattr(self, obj_field, obj_val)
+
+        self.__load_from_header()
+
+    def __load_from_header(self):
+        header_name_map = {
+            "name": "name",
+            "description": "description",
+            "template_id": "id"
+        }
+        for header_field, db_field in header_name_map.iteritems():
+            if self.header and not getattr(self,header_field,None):
+                # if the object attribute is not set, set it
+                header_val = self.header.get(db_field,None)     
+                if header_val:
+                    if header_field == 'template_id':
+                        header_val = int(header_val)      
+                    setattr(self, header_field, header_val)  
+
+        self.created = datetime.datetime.strptime(self.header['createdAt'], '%Y-%m-%d %H:%M:%S.%f') 
+        self.updated = datetime.datetime.strptime(self.header['updatedAt'], '%Y-%m-%d %H:%M:%S.%f')     
+
 
     def get(self, template_id = None):
         """
@@ -69,17 +102,14 @@ class Template(object):
         request_url = "/template/%s" % (str(template_id))
         response_code, response_data = self.api_client.get(request_url)
         if response_code == 200:
-            new_template = Template()
-            try:
-                new_template.template_id = int(response_data["templateHeader"]["id"])
-            except:
+            template_instance = Template(api_client=self.api_client)
+            template_instance.__load_from_dict(response_data)
+            if not template_instance.template_id:
                 raise exceptions.InvalidParameterException("No template returned for template_id: %s" % template_id)
-            new_template.name = response_data["templateHeader"]["name"]
-            new_template.description = response_data["templateHeader"]["description"]
-            new_template.fields_model = response_data["fieldsModel"]
+
         else:
-            new_template = None
-        return new_template
+            template_instance = None
+        return template_instance
 
     def count(self):
         """
@@ -123,11 +153,10 @@ class Template(object):
         if response_code == 200:
             dict_list = response_data.get("templateHeaders",[])
             for template_item in dict_list:
-                new_template = Template()
-                new_template.template_id = int(template_item["id"])
-                new_template.name = template_item["name"]
-                new_template.description = template_item["description"]
-                new_template.fields_model = {}
+                new_template = Template(api_client=self.api_client)
+                new_template.header = template_item
+                new_template.__load_from_header()
+
                 template_list.append(new_template)
         return template_list
 
@@ -147,7 +176,6 @@ class Template(object):
         request_url = "/template/%s" % (str(template_id))
         response_code, response_data = self.api_client.delete(request_url, {})
         if response_code == 200:
-            self.api_client = client.PassToolsClient()
             self.template_id = None
             self.name = None
             self.description = None

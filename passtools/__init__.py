@@ -15,3 +15,4 @@ PassTools passes.
 
 api_version = "1.0.0"
 
+from service import Service

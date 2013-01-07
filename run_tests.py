@@ -11,10 +11,9 @@ import unittest
 
 def run_tests():
 	
-	for test_case in [passes.TestPasses, templates.TestTemplates, user_passes.TestUserPasses]:
+	for test_case in [templates.TestTemplates, passes.TestPasses, templates.TestTemplates, user_passes.TestUserPasses]:
 		suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
 		unittest.TextTestRunner(verbosity=2).run(suite)
-
 
 
 if __name__ == '__main__':

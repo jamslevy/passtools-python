@@ -19,17 +19,17 @@ from pt_pass import Pass
 
 class Service(object):
 
-    def __init__(self, api_client=None):
+    def __init__(self, api_key=None):
         """
         Initiate new Passtools Service instance
 
-        @type api_client: PassToolsClient instance
-        @param api_client: Optional custom client to include
+        @type api_key: string
+        @param api_key: Passtools API Key
         @return: None
         """
         super(Service, self).__init__()
         # Share the api_key and base_url with all importers of the module
-        self.api_client = api_client or PassToolsClient()
+        self.api_client = PassToolsClient(api_key=api_key)
 
     def is_service_up(self):
         """
@@ -53,7 +53,7 @@ class Service(object):
         @param template_id: ID of the desired template
         @return: template.Template instance
         """
-        new_template = Template(template_id)
+        new_template = Template(template_id, api_client=self.api_client)
         return new_template
 
     def delete_template(self, template_id = None):
@@ -66,7 +66,7 @@ class Service(object):
         @param template_id: ID of the template to delete
         @return: None
         """
-        temp_template = Template()
+        temp_template = Template(api_client=self.api_client)
         temp_template.delete(template_id)
 
     def count_templates(self):
@@ -77,7 +77,7 @@ class Service(object):
 
         @return: Integer
         """
-        temp_template = Template()
+        temp_template = Template(api_client=self.api_client)
         return temp_template.count()
 
     def list_templates(self, **kwargs):
@@ -99,7 +99,7 @@ class Service(object):
         @param direction: Direction which to sort list [Optional; From (ASC, DESC)]
         @return: List of template.Template instances
         """
-        temp_template = Template()
+        temp_template = Template(api_client=self.api_client)
         return temp_template.list(**kwargs)
 
     def create_pass(self, template_id = None, template_fields_model = None):
@@ -114,7 +114,7 @@ class Service(object):
         @param template_fields_model: template_fields_model dict of the template used to create new pass
         @return: pt_pass.Pass instance
         """
-        new_pass = Pass(template_id, template_fields_model)
+        new_pass = Pass(template_id, template_fields_model or {},api_client=self.api_client)
         return new_pass
 
     def update_pass(self, pass_id, update_fields = None):
@@ -129,7 +129,7 @@ class Service(object):
         @param update_fields: template_fields_model dict of the template used to create new pass
         @return: pt_pass.Pass instance
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         new_pass = temp_pass.get(pass_id)
         return new_pass.update(update_fields)
 
@@ -143,7 +143,7 @@ class Service(object):
         @param pass_id: ID of pt_pass.Pass to update
         @return: Dict
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         new_pass = temp_pass.get(target_pass_id)
         return new_pass.push()
 
@@ -157,7 +157,7 @@ class Service(object):
         @param pass_id: ID of desired pt_pass.Pass.
         @return: pt_pass.Pass instance
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         new_pass = temp_pass.get(pass_id)
 
         return new_pass
@@ -172,7 +172,7 @@ class Service(object):
         @param pass_id: ID of pt_pass.Pass to delete
         @return: None
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         temp_pass.delete(pass_id)
 
     def count_passes(self, template_id = None):
@@ -187,7 +187,7 @@ class Service(object):
         @param templateId: ID of the template used to create new pass
         @return: Integer
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         return temp_pass.count(template_id)
 
     def list_passes(self, **kwargs):
@@ -212,7 +212,7 @@ class Service(object):
         @param direction: Direction which to sort list [Optional; From (ASC, DESC)]
         @return: List of pt_pass.Pass instances
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         return temp_pass.list(**kwargs)
 
     def download_pass(self, destination_path = None, pass_id = None):
@@ -226,5 +226,5 @@ class Service(object):
         @type destination_path: str
         @param destination_path: path to receive pass file. Path must exist, and filename must end with ".pkpass"
         """
-        temp_pass = Pass()
+        temp_pass = Pass(api_client=self.api_client)
         return temp_pass.download(destination_path, pass_id)

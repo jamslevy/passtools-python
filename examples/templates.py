@@ -52,7 +52,7 @@ class TestTemplates(test.PassToolsTestCase):
 
 		#Or we can instantiate the template using its ID.
 		print "Instantiate Template #%d" % self.template_id
-		template_instance = template.Template(self.template_id)
+		template_instance = template.Template(self.template_id, api_client=self.service.api_client)
 		print template_instance
 		print ""
 
@@ -61,7 +61,7 @@ class TestTemplates(test.PassToolsTestCase):
 		Let's delete that template
 		"""
 		print "Delete Template #%d" % self.template_id
-		template_instance = template.Template(self.template_id)
+		template_instance = template.Template(self.template_id, api_client=self.service.api_client)
 		template_instance.delete()
 		# Alternatively: service.delete_template(self.template_id)
 
