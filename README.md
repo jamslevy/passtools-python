@@ -7,7 +7,7 @@ Official Python SDK for the PassTools API
 
 * Please refer to the [API Doc](https://github.com/tello/passtools-api) for the raw apis.
 * Indexed documentation for the python SDK is available at [http://tello.github.com/passtools-python/](http://tello.github.com/passtools-python/).
-* There are also commented example scripts available in the "Example_Scripts" directory of the installation. These scripts include examples of all available calls as well as a couple of real-world-like scenarios.
+* There are also commented test scripts available in the "examples" directory of the installation. These scripts include examples of all available calls as well as a couple of real-world-like scenarios.
 
 ## Installation
 

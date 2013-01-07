@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block main %}
+
+
+<h1><span style="margin-top: 10px; float: left; margin-right: 10px;" class="label label-info">Pass</span> 
+	{{ pt_pass.pass_id }}
+</h1>
+<table class="table table-striped table-bordered" style="margin:20px;">
+	<tr><td><b>Template</b></td><td>{{ pt_pass.template_id }}</td></tr>
+	<tr><td><b>URL</b></td><td><a target="_blank" href="{{ pt_pass.url }}">{{ pt_pass.url }}</a></td></tr>
+	<tr><td><b>Created</b></td><td>{{ pt_pass.created|timesince }}</td></tr>
+	{% if pt_pass.updated %}<tr><td><b>Updated</b></td><td>{{ pt_pass.updated|timesince }}</td></tr>{% endif %}
+	<tr><td><b>Fields</b></td><td>{{ pt_pass.pass_fields|pretty_dict|safe }}</td></tr>
+
+
+</table>
+<br/>
+<a target="_blank" href="{{ pt_pass.url }}?api_key={{ api_key }}" class="btn btn-primary">Download</a>
+<br/><br/>
+<a id="{{ pt_pass.pass_id }}" onclick="if (confirm('Are you sure you want to delete this pass?')) window.location.href = '/pass/' + this.id + '/delete';" class="btn btn-danger">Delete</a>
+
+{% endblock %}
