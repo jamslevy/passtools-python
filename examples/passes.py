@@ -28,7 +28,7 @@ class TestPasses(test.PassToolsTestCase):
 		self.test_push_update()
 		self.test_delete()	
 
-	def _test_get(self):
+	def test_get(self):
 		# Next, we'll retrieve the full form of that pass
 		# You might retrieve a pass, for example, in preparation for updating it.
 
@@ -93,7 +93,7 @@ class TestPasses(test.PassToolsTestCase):
 		print "Downloading an id-specified Pass from the service..."
 		self.service.download_pass("/tmp/New_Pass_2.pkpass", self.pt_pass.pass_id)
 
-	def _test_update(self):
+	def test_update(self):
 		# Next, we'll update an existing pass, using--surprise!--the 'update' method. In this case, we use the fields
 		# from the existing pass, modify them, and call update. In typical usage, you might call 'get' above to retrieve a
 		# pass to use as input...we'll the pass we just created, so the script output will allow you to compare before/after update.
@@ -128,10 +128,10 @@ class TestPasses(test.PassToolsTestCase):
 		# If you send the updated pass to a user who has already installed the previous version,
 		# they'll see an "Update" button instead of an "Add" button in the iOS UI.
 
-	def _test_push_update(self):
+	def test_push_update(self):
 		return_data = self.pt_pass.push_update()		
 
-	def _test_delete(self):
+	def test_delete(self):
 		# Finally, let's delete the pass:
 		deleted_id = self.pt_pass.pass_id
 		print "Delete Pass %s" % deleted_id
